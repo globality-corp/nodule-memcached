@@ -20,19 +20,23 @@ function cachePromise(cache, method, ...args) {
 
 /**
  * Cache
+ *
  * @constructor
- * @param {string} [cacheHost] - cache host url
- * @param {Object} [options] - options passed to memcached
+ * @param {Object} options - options passed to memcached
+ * @param {string} options.hosts - comma-separated list of memcached hosts
  *
  * @example
- *    new Cache('host', { maxExpiration: 900 });
- *
+ *    new Cache({ hosts: 'host1,host2', maxExpiration: 900 });
  */
 class Cache {
     constructor(options = {
         maxExpiration: MAX_EXPIRATION,
         hosts: DEFAULT_HOST,
     }) {
+        if (options.timeout) {
+            options.timeout = parseInt(options.timeout, 10);
+        }
+
         this.maxExpiration = options.maxExpiration;
         const hosts = options.hosts.split(',');
         this.client = new Memcached(hosts, options);

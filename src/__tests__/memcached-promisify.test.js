@@ -1,3 +1,5 @@
+import Memcached from 'memcached';
+
 import Cache from '../memcached-promisify';
 
 const mockConfig = {
@@ -9,15 +11,62 @@ const mockConfig = {
 jest.mock('@globality/nodule-config', () => ({
     getContainer: () => (mockConfig),
 }));
+jest.mock('memcached');
 
 const cache = new Cache({ maxExpiration: 900, hosts: 'localhost:11211' });
 describe('memcached promisify', () => {
+    beforeEach(() => {
+        Memcached.mockClear();
+    });
+
     it('should have various methods', () => {
         expect(cache.get).toBeDefined();
         expect(cache.getMulti).toBeDefined();
         expect(cache.set).toBeDefined();
         expect(cache.add).toBeDefined();
         expect(cache.del).toBeDefined();
+    });
+
+    it('should create a memcached client', () => {
+        new Cache();
+        expect(Memcached).toHaveBeenCalled();
+    });
+
+    it('should set sensible default values', () => {
+        new Cache();
+        expect(Memcached).toHaveBeenCalledWith(
+            ['localhost:11211'],
+            {
+                hosts: 'localhost:11211',
+                maxExpiration: 2592000, // 30 days
+            }
+        );
+    });
+
+    it('can support multiple hosts', () => {
+        const hosts = 'localhost:11211,localhost:11212';
+
+        new Cache({ hosts });
+
+        expect(Memcached).toHaveBeenCalledWith(
+            ['localhost:11211', 'localhost:11212'],
+            { hosts }
+        );
+    });
+
+    it('should cast timeout to a number', () => {
+        new Cache({
+            hosts: 'localhost:11211',
+            timeout: '100',
+        });
+
+        expect(Memcached).toHaveBeenCalledWith(
+            ['localhost:11211'],
+            {
+                hosts: 'localhost:11211',
+                timeout: 100,
+            }
+        );
     });
 
     xdescribe('execute methods', () => {
