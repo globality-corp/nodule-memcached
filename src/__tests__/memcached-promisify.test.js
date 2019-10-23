@@ -13,7 +13,10 @@ jest.mock('@globality/nodule-config', () => ({
 }));
 jest.mock('memcached');
 
+/* eslint-disable no-new */
+
 const cache = new Cache({ maxExpiration: 900, hosts: 'localhost:11211' });
+
 describe('memcached promisify', () => {
     beforeEach(() => {
         Memcached.mockClear();
@@ -39,7 +42,7 @@ describe('memcached promisify', () => {
             {
                 hosts: 'localhost:11211',
                 maxExpiration: 2592000, // 30 days
-            }
+            },
         );
     });
 
@@ -50,7 +53,7 @@ describe('memcached promisify', () => {
 
         expect(Memcached).toHaveBeenCalledWith(
             ['localhost:11211', 'localhost:11212'],
-            { hosts }
+            { hosts },
         );
     });
 
@@ -65,7 +68,7 @@ describe('memcached promisify', () => {
             {
                 hosts: 'localhost:11211',
                 timeout: 100,
-            }
+            },
         );
     });
 
