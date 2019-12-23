@@ -13,7 +13,7 @@
         "verify": "yarn lint && yarn test"
     },
     "dependencies": {
-        "lodash": "^4.17.5",
+        "lodash": "^4.17.12",
         "memcached": "^2.2.2"
     },
     "peerDependencies": {
