@@ -145,7 +145,7 @@ class Cache {
             return keys.map(key => values[key]);
         } catch (err) {
             const { logger } = getContainer();
-            logger.warning(req, err.message, {
+            logger.warning(req, `unable to get cache data: ${err.message}`, {
                 error: err,
                 keys,
             });
