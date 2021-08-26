@@ -1,7 +1,11 @@
 {
-  "type": "node-module",
   "params": {
+    "extra_publication": {
+      "jfrog": true
+    },
     "name": "nodule-memcached",
     "open_source": true
-  }
+  },
+  "type": "node-module",
+  "version": "2021.21.1"
 }
