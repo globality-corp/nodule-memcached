@@ -19,6 +19,16 @@ function cachePromise(cache, method, ...args) {
 }
 
 /**
+ * It calculates the elapsed time in milliseconds between now and a starting time
+ * @param {*} executeStartTime start point in time
+ * @returns elapsed time in seconds
+ */
+function elapsedTimeMs(executeStartTime) {
+    const executeTime = process.hrtime(executeStartTime);
+    return (executeTime[0] * 1e3) + (executeTime[1] * 1e-6);
+}
+
+/**
  * Cache
  *
  * @constructor
@@ -113,9 +123,19 @@ class Cache {
         return cachePromise(this, 'del', key);
     }
 
-    async safeSave(req, key, value, ttl) {
+    async safeSave(req, key, value, ttl, resourceName, endpointName) {
+        const { logger } = getContainer();
+        const executeStartTime = process.hrtime();
+
         try {
             await this.add(key, value, ttl);
+            logger.warning(req, `Memcache: Did Save ${endpointName}`, {
+                key,
+                operation: endpointName,
+                action: 'save',
+                objectType: resourceName,
+                elapsedTimeMs: elapsedTimeMs(executeStartTime),
+            });
         } catch (error) {
             // Two cases here:
             //
@@ -125,10 +145,13 @@ class Cache {
             //
             //  2. !error.notStored => something actually went wrong
             if (!error.notStored) {
-                const { logger } = getContainer();
-                logger.warning(req, 'unable to add cache data', {
+                logger.warning(req, `Memcache: Failed Save ${endpointName}`, {
                     error: error.message,
                     key,
+                    operation: endpointName,
+                    action: 'save',
+                    objectType: resourceName,
+                    elapsedTimeMs: elapsedTimeMs(executeStartTime),
                 });
             }
         }
@@ -139,15 +162,29 @@ class Cache {
      *
      * Returns an array of values; uses `undefined` for missing values.
      */
-    async safeGet(req, keys) {
+    async safeGet(req, keys, resourceName, endpointName) {
+        const { logger } = getContainer();
+        const executeStartTime = process.hrtime();
+
         try {
             const values = await this.getMulti(keys);
-            return keys.map(key => values[key]);
-        } catch (err) {
-            const { logger } = getContainer();
-            logger.warning(req, `unable to get cache data: ${err.message}`, {
-                error: err,
+            logger.warning(req, `Memcache: Did Get ${endpointName}`, {
                 keys,
+                operation: endpointName,
+                action: 'get',
+                objectType: resourceName,
+                elapsedTimeMs: elapsedTimeMs(executeStartTime),
+            });
+            return keys.map(key => values[key]);
+        } catch (error) {
+
+            logger.warning(req, `Memcache: Failed Get ${endpointName}`, {
+                error,
+                keys,
+                operation: endpointName,
+                action: 'get',
+                objectType: resourceName,
+                elapsedTimeMs: elapsedTimeMs(executeStartTime),
             });
             return keys.map(() => undefined);
         }
