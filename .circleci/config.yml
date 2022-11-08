@@ -1,15 +1,35 @@
-defaults: &defaults
-  working_directory: ~/repo
-  docker:
-    - image: circleci/node:14.16.1
+
+
+executors:
+  node-executor:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:14.16.1
+        environment:
+          EXTRA_INDEX_URL: "InjectedDuringRuntime"
+          AWS_ECR_DOMAIN: "InjectedDuringRuntime"
+          JFROG_AUTH: "InjectedDuringRuntime"
+          APOLLO_ENGINE_API_KEY: "InjectedDuringRuntime"
+
+  globality-build-executor:
+    working_directory: ~/repo
+    docker:
+      - image: ${AWS_ECR_DOMAIN}/globality-build:2021.21.1
+        aws_auth:
+          aws_access_key_id: ${AWS_ACCESS_KEY_ID}
+          aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+        environment:
+          EXTRA_INDEX_URL: "InjectedDuringRuntime"
+          AWS_ECR_DOMAIN: "InjectedDuringRuntime"
+          JFROG_AUTH: "InjectedDuringRuntime"
 
 whitelist: &whitelist
   paths: .
 
-version: 2
+version: 2.1
 jobs:
   checkout:
-    <<: *defaults
+    executor: node-executor
 
     steps:
       - checkout
@@ -36,7 +56,7 @@ jobs:
           <<: *whitelist
 
   lint:
-    <<: *defaults
+    executor: node-executor
 
     steps:
       - attach_workspace:
@@ -47,7 +67,7 @@ jobs:
           command: yarn lint
 
   test:
-    <<: *defaults
+    executor: node-executor
 
     steps:
       - attach_workspace:
@@ -62,7 +82,7 @@ jobs:
           <<: *whitelist
 
   build:
-    <<: *defaults
+    executor: node-executor
 
     steps:
       - attach_workspace:
@@ -77,22 +97,20 @@ jobs:
           <<: *whitelist
 
   deploy_rc:
-    <<: *defaults
+    executor: node-executor
 
     steps:
       - attach_workspace:
           at: ~/repo
 
       - run:
-          name: Publish to JFrog
+          name: Publish to NPM
           command: |
             sed  -i '/version/s/[^.]*$/'"0-dev${CIRCLE_BUILD_NUM}\",/" package.json
-            curl -s -u$JFROG_AUTH https://globality.jfrog.io/globality/api/npm/auth > .npmrc
-            echo "registry=https://globality.jfrog.io/globality/api/npm/npm"       >> .npmrc
             npm publish
 
   publish_library_to_npmjs:
-    <<: *defaults
+    executor: node-executor
 
     steps:
       - attach_workspace:
@@ -103,7 +121,7 @@ jobs:
           command: npm publish
 
   publish_library_to_jfrog:
-    <<: *defaults
+    executor: node-executor
 
     steps:
       - attach_workspace:
